@@ -46,7 +46,7 @@
       container: mapContainer,
       style: "mapbox://styles/sashagaribaldy/cm6ktkpxn00m901s2fo0bh1e4",
       projection: "naturalEarth",
-      center: [0, 0],
+      center: [10,10],
       zoom: 1.5,
     });
 
