@@ -6,7 +6,7 @@
     construct_line,
     construct_points,
   } from "./utils.js";
-  import { afterUpdate, onMount } from "svelte";
+  import { onMount } from "svelte";
   import mapboxgl from "mapbox-gl";
   import "mapbox-gl/dist/mapbox-gl.css";
 
@@ -22,7 +22,7 @@
     .domain([0, 100])
     .range([height - 20, 20]);
 
-  let blah = createGeoJSONCircle([67.709953, 33.93911], 1000);
+  let blah = createGeoJSONCircle([67.709953, 33.93911], 1500);
   let krava = createGeoJSONCircle([67.709953, 33.93911], 5000);
   console.log(blah);
 
@@ -35,10 +35,40 @@
   let map;
   let path = ["./elisa_map.csv"];
   let conflict_groups;
+  let cleaned_geo = [];
   getCSV(path).then((data) => {
     geo = data[0];
+    console.log(geo);
+
+    cleaned_geo = geo
+      .map((d) => {
+        // Reject rows where any relevant field is "NA"
+        if (
+          d.dist_mediation_conflict === "NA" ||
+          d.fatalities_best === "NA" ||
+          d.latitude_con === "NA" ||
+          d.longitude_con === "NA" ||
+          d.iso3c === "NA"
+        ) {
+          return null;
+        }
+
+        const distance = +d.dist_mediation_conflict;
+        const deaths = +d.fatalities_best;
+
+        if (!isFinite(distance) || distance <= 0) {
+          return null;
+        }
+
+        return {
+          ...d,
+          distance,
+          deaths: isFinite(deaths) ? deaths : 0,
+        };
+      })
+      .filter(Boolean);
+
     conflict_groups = d3.groups(geo, (d) => d.conflict_country);
-    console.log(conflict_groups);
   });
 
   onMount(() => {
@@ -66,7 +96,7 @@
           type: "fill",
           source: "polygon",
           paint: {
-            "fill-color": "gray",
+            "fill-color": "steelblue",
             "fill-opacity": 0.4,
           },
         });
@@ -81,8 +111,8 @@
           type: "fill",
           source: "polygon3",
           paint: {
-            "fill-color": "gray",
-            "fill-opacity": 0.4,
+            "fill-color": "steelblue",
+            "fill-opacity": 0.2,
           },
         });
 
@@ -98,6 +128,7 @@
           paint: {
             "line-color": "white",
             "line-width": 1,
+            "line-opacity": 0.6,
           },
         });
 
@@ -146,7 +177,7 @@
     const newPoints = construct_points(update_data);
     let newBlah = createGeoJSONCircle(
       [+update_data[0].longitude_con, +update_data[0].latitude_con],
-      1000,
+      1500,
     );
     let newKrava = createGeoJSONCircle(
       [+update_data[0].longitude_con, +update_data[0].latitude_con],
@@ -287,19 +318,24 @@
       </li>
     </ol>
   </div>
+  <div id="chart1">
+    <svg {width} {height}>
+      {#if cleaned_geo}
+        {#each cleaned_geo as g}
+          <circle
+            cx={x_scale(g.distance)}
+            cy={y_scale(g.deaths)}
+            r="3"
+            fill="black"
+            stroke="white"
+          >
+          </circle>
+        {/each}
+      {/if}
+    </svg>
+  </div>
   <div id="chart" bind:clientWidth={width} bind:clientHeight={height}>
     <svg {width} {height}>
-      <!-- {#if geo}
-      {#each geo as g}
-        <circle
-          cx={x_scale(g.dist_mediation_conflict)}
-          cy={y_scale(g.fatalities_best)}
-          r="3"
-          fill="white"
-        >
-        </circle>
-      {/each}
-    {/if} -->
       {#each arcs as arc}
         <path
           d={arc.d}
@@ -339,6 +375,31 @@
       on the ground often happens closer to the epicenter of conflict through
       local engagement and direct intervention.
     </p>
+    <p>
+      For policymakers and peace practitioners, these findings prompt a deeper
+      reflection on priorities and strategies:
+    </p>
+    <ul>
+      <li>
+        Tailor the Approach to the Goal: If the primary objective is a formal
+        peace agreement, seeking geographically distant and neutral mediation
+        venues appears to be a more effective strategy.
+      </li>
+      <li>
+        Invest in Localized Efforts: For immediate de-escalation and mitigation
+        of fatalities, greater investment in and support for localized mediation
+        efforts are essential. These efforts leverage intimate knowledge of the
+        conflict context and facilitate trust-building among directly affected
+        parties.
+      </li>
+      <li>
+        A Holistic Strategy: True conflict resolution requires a holistic
+        strategy that values both formal peace agreements and on-the-ground
+        violence reduction. This may necessitate a multi-layered approach,
+        combining distant high-level negotiations with embedded, proximate
+        mediation initiatives.
+      </li>
+    </ul>
   </div>
 </main>
 
@@ -352,10 +413,27 @@
     color: rgb(246, 246, 234);
   }
 
+  h1 {
+    width: 80%;
+    margin: 50px auto;
+    text-align: center;
+  }
+
+  li {
+    padding: 5px;
+  }
+
   .blog_text,
   #buttons {
     width: 65%;
     margin: 50px auto;
+  }
+
+  @media (max-width: 768px) {
+    .blog_text,
+    #buttons {
+      width: 95%;
+    }
   }
 
   #buttons {
@@ -364,15 +442,10 @@
   }
 
   #map,
-  #chart {
+  #chart,
+  #chart1 {
     width: 80%;
     height: 80vh;
     margin: auto;
-  }
-
-  h1 {
-    width: 80%;
-    margin: 50px auto;
-    text-align: center;
   }
 </style>
