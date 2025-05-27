@@ -22,8 +22,8 @@
     .domain([0, 100])
     .range([height - 20, 20]);
 
-  let blah = createGeoJSONCircle([67.709953, 33.93911], 2000);
-  let krava = createGeoJSONCircle([67.709953, 33.93911], 6500);
+  let blah = createGeoJSONCircle([67.709953, 33.93911], 1000);
+  let krava = createGeoJSONCircle([67.709953, 33.93911], 5000);
   console.log(blah);
 
   let mapContainer;
@@ -46,8 +46,8 @@
       container: mapContainer,
       style: "mapbox://styles/sashagaribaldy/cm6ktkpxn00m901s2fo0bh1e4",
       projection: "naturalEarth",
-      center: [10,10],
-      zoom: 1.5,
+      center: [10, 10],
+      zoom: 1.2,
     });
 
     map.on("load", () => {
@@ -67,7 +67,7 @@
           source: "polygon",
           paint: {
             "fill-color": "gray",
-            "fill-opacity": 0.3,
+            "fill-opacity": 0.4,
           },
         });
 
@@ -82,7 +82,7 @@
           source: "polygon3",
           paint: {
             "fill-color": "gray",
-            "fill-opacity": 0.3,
+            "fill-opacity": 0.4,
           },
         });
 
@@ -146,11 +146,11 @@
     const newPoints = construct_points(update_data);
     let newBlah = createGeoJSONCircle(
       [+update_data[0].longitude_con, +update_data[0].latitude_con],
-      2000,
+      1000,
     );
     let newKrava = createGeoJSONCircle(
       [+update_data[0].longitude_con, +update_data[0].latitude_con],
-      6500,
+      5000,
     );
 
     const lineSource = map.getSource("curved-line");
@@ -225,18 +225,71 @@
   }
 </script>
 
-<div id="buttons">
-  <button on:click={() => updateMapData("Afghanistan")}> Afghanistan </button>
-  <button on:click={() => updateMapData("Israel")}>Israel</button>
-  <button on:click={() => updateMapData("Libya")}>Libya</button>
-  <button on:click={() => updateMapData("Sudan")}>Sudan</button>
-  <button on:click={() => updateMapData("Syria")}>Syria</button>
-  <button on:click={() => updateMapData("Yemen")}>Yemen</button>
-</div>
-<div id="map" bind:this={mapContainer}></div>
-<div id="chart" bind:clientWidth={width} bind:clientHeight={height}>
-  <svg {width} {height}>
-    <!-- {#if geo}
+<main>
+  <h1>
+    Bridging the Distance: New Insights on Geography in Conflict Mediation
+  </h1>
+  <div class="blog_text">
+    <p>
+      Until recently, we haven’t been able to answer basic questions about the
+      logistics of conflict mediation and how they shape outcomes, largely due
+      to a lack of systematic data. As a result, factors like where mediation
+      takes place have remained understudied. With new data now available,
+      researchers are beginning to examine these overlooked dimensions,
+      including recent work on the role of location in the mediation process.
+    </p>
+    <p>
+      A recent study, “The Geography of Conflict Mediation: Proximity and
+      Success in Armed Conflict Resolutions,” looks at how the distance between
+      conflict zones and mediation sites affects the chances of reaching a
+      peaceful outcome. Drawing on newly available geospatial data, the study
+      finds that location plays a meaningful role in shaping mediation success.
+    </p>
+    <h2>The Paradox of Distance: Agreements vs. De-escalation</h2>
+    <p>The research highlights a fascinating duality in mediation success:</p>
+
+    <ol>
+      <li>
+        Distant Mediation Fosters Agreements: The study finds that the further a
+        mediation event is from a conflict area, the higher the likelihood of a
+        formal peace agreement being signed. This suggests that a greater
+        geographical distance can confer perceived neutrality, reduce immediate
+        local political pressures, and allow parties to negotiate without the
+        intense emotional and security concerns that often plague discussions
+        held closer to the conflict. The data indicates that for every
+        additional “far away” mediation event, the odds of a peace agreement
+        being signed increase by approximately 14.2%. This underscores the
+        strategic value of neutral ground when aiming for formal settlements.
+      </li>
+    </ol>
+  </div>
+  <div id="buttons">
+    <button on:click={() => updateMapData("Afghanistan")}> Afghanistan </button>
+    <button on:click={() => updateMapData("Israel")}>Israel</button>
+    <button on:click={() => updateMapData("Libya")}>Libya</button>
+    <button on:click={() => updateMapData("Sudan")}>Sudan</button>
+    <button on:click={() => updateMapData("Syria")}>Syria</button>
+    <button on:click={() => updateMapData("Yemen")}>Yemen</button>
+  </div>
+  <div id="map" bind:this={mapContainer}></div>
+  <div class="blog_text">
+    <ol start="2">
+      <li>
+        Closer Proximity Reduces Violence: Conversely, the research demonstrates
+        that closer proximity between a mediation event and the conflict zone is
+        directly linked to a greater reduction in violent events and fatalities.
+        This is because localized mediation can foster trust, directly engage
+        local actors, address specific grievances, and enable quicker responses
+        to escalating violence on the ground. Such immediacy, driven by close
+        proximity, acts as a powerful catalyst for de-escalation. Specifically,
+        for every additional “close by” mediation event, the expected number of
+        battle deaths in the following month decreases by approximately 4.7%.
+      </li>
+    </ol>
+  </div>
+  <div id="chart" bind:clientWidth={width} bind:clientHeight={height}>
+    <svg {width} {height}>
+      <!-- {#if geo}
       {#each geo as g}
         <circle
           cx={x_scale(g.dist_mediation_conflict)}
@@ -247,46 +300,79 @@
         </circle>
       {/each}
     {/if} -->
-    {#each arcs as arc}
-      <path
-        d={arc.d}
-        fill="none"
-        stroke="steelblue"
-        stroke-width="1"
-        stroke-opacity="0.3"
-      >
-        <title
-          >{arc.conflict_country}: {arc.distance.toLocaleString()} meters</title
+      {#each arcs as arc}
+        <path
+          d={arc.d}
+          fill="none"
+          stroke="steelblue"
+          stroke-width="1"
+          stroke-opacity="0.3"
         >
-      </path>
-    {/each}
-    {#each arcs as arc}
-      <circle
-        cx={arc.x}
-        cy={arc.y}
-        r={arc.r}
-        fill="tomato"
-        fill-opacity="0.5"
-        stroke="black"
-      >
-        <title>
-          {arc.conflict_country} — Agreements: {arc.agreements}
-        </title>
-      </circle>
-    {/each}
-  </svg>
-</div>
+          <title
+            >{arc.conflict_country}: {arc.distance.toLocaleString()} meters</title
+          >
+        </path>
+      {/each}
+      {#each arcs as arc}
+        <circle
+          cx={arc.x}
+          cy={arc.y}
+          r={arc.r}
+          fill="tomato"
+          fill-opacity="0.5"
+          stroke="black"
+        >
+          <title>
+            {arc.conflict_country} — Agreements: {arc.agreements}
+          </title>
+        </circle>
+      {/each}
+    </svg>
+  </div>
+  <div class="blog_text">
+    <h2>Implications for Peacemakers</h2>
+    <p>
+      This groundbreaking work signals a vital redefinition of “conflict
+      resolution” for peacemakers. It suggests that success isn’t a singular
+      metric. Formal agreements may indeed require the neutral, removed spaces
+      offered by distant mediation, but the necessary work of reducing violence
+      on the ground often happens closer to the epicenter of conflict through
+      local engagement and direct intervention.
+    </p>
+  </div>
+</main>
 
 <style>
-  #map,
-  #chart {
-    width: 100%;
-    height: 100vh;
+  main {
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    max-width: 100%;
+    box-sizing: border-box;
+    color: rgb(246, 246, 234);
+  }
+
+  .blog_text,
+  #buttons {
+    width: 65%;
+    margin: 50px auto;
   }
 
   #buttons {
-    position: absolute;
-    top: 0px;
-    z-index: 999;
+    text-align: center;
+    margin: 10px auto;
+  }
+
+  #map,
+  #chart {
+    width: 80%;
+    height: 80vh;
+    margin: auto;
+  }
+
+  h1 {
+    width: 80%;
+    margin: 50px auto;
+    text-align: center;
   }
 </style>
