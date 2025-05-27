@@ -13,6 +13,12 @@
 
   let width = 400;
   let height = 400;
+  let isOverlayVisible = true;
+
+  // remove initial div
+  function removeOverlay() {
+    isOverlayVisible = false;
+  }
 
   $: x_scale = d3
     .scaleLinear()
@@ -337,7 +343,17 @@
     <button on:click={() => updateMapData("Syria")}>Syria</button>
     <button on:click={() => updateMapData("Yemen")}>Yemen</button>
   </div>
-  <div id="map" bind:this={mapContainer}></div>
+  <div class="map-wrapper">
+    {#if isOverlayVisible}
+      <div class="overlay">
+        <button class="remove-overlay" on:click={removeOverlay}>
+          Click to Explore
+        </button>
+      </div>
+    {/if}
+    <div id="map" bind:this={mapContainer}></div>
+  </div>
+
   <div class="blog_text">
     <ol start="2">
       <li>
@@ -439,6 +455,49 @@
 </main>
 
 <style>
+  .map-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100vh; /* or whatever height you need */
+  }
+
+  .overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 80%;
+    height: 80vh;
+    margin: 0px auto;
+    background-color: rgba(255, 255, 255, 0.2);
+    display: flex;
+    border-radius: 5px;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+  }
+
+  .remove-overlay {
+    color: black;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    border: none;
+    background-color: rgba(255, 255, 255, 0.8);
+    font-family: "Montserrat", sans-serif;
+    font-size: 20px;
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-style: normal;
+  }
+
+  .remove-overlay:hover {
+    cursor: pointer;
+    background-color: red;
+    color: white;
+  }
+
   main {
     display: flex;
     flex-direction: column;
