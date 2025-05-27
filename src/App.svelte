@@ -2,6 +2,7 @@
   import * as d3 from "d3";
   import {
     getCSV,
+    getGeoMultiple,
     createGeoJSONCircle,
     construct_line,
     construct_points,
@@ -24,7 +25,6 @@
 
   let blah = createGeoJSONCircle([67.709953, 33.93911], 1500);
   let krava = createGeoJSONCircle([67.709953, 33.93911], 5000);
-  console.log(blah);
 
   let mapContainer;
   mapboxgl.accessToken =
@@ -32,14 +32,13 @@
 
   // load data
   let geo;
+  let geo_data;
   let map;
   let path = ["./elisa_map.csv"];
   let conflict_groups;
   let cleaned_geo = [];
   getCSV(path).then((data) => {
     geo = data[0];
-    console.log(geo);
-
     cleaned_geo = geo
       .map((d) => {
         // Reject rows where any relevant field is "NA"
@@ -71,7 +70,14 @@
     conflict_groups = d3.groups(geo, (d) => d.conflict_country);
   });
 
+  const json_path = ["geojson.json"];
+  getGeoMultiple(json_path).then((geo) => {
+    geo_data = geo[0];
+  });
+
   onMount(() => {
+    // Load GEOJSON
+
     map = new mapboxgl.Map({
       container: mapContainer,
       style: "mapbox://styles/sashagaribaldy/cm6ktkpxn00m901s2fo0bh1e4",
@@ -81,10 +87,38 @@
     });
 
     map.on("load", () => {
-      if (conflict_groups[0][1]) {
+      if (conflict_groups[0][1] && geo_data) {
         const lines = construct_line(conflict_groups[0][1]);
         const points = construct_points(conflict_groups[0][1]);
-        console.log(blah);
+        console.log(geo_data);
+
+        map.addSource("countries", {
+          type: "geojson",
+          data: geo_data,
+          generateId: true, // Ensures all features have unique IDs
+        });
+
+        // Find the first symbol layer (typically a label layer)
+        const labelLayerId = map
+          .getStyle()
+          .layers.find(
+            (layer) => layer.type === "symbol" && layer.layout?.["text-field"],
+          )?.id;
+
+        // Add fill layer with conditional color
+        map.addLayer(
+          {
+            id: "countries_fill",
+            type: "fill",
+            source: "countries",
+            paint: {
+              "fill-color": "steelblue",
+              "fill-opacity": 0.8,
+            },
+            filter: ["in", "ADMIN", "Afghanistan"],
+          },
+          labelLayerId,
+        );
 
         map.addSource("polygon", {
           type: "geojson",
@@ -97,7 +131,7 @@
           source: "polygon",
           paint: {
             "fill-color": "steelblue",
-            "fill-opacity": 0.4,
+            "fill-opacity": 0.2,
           },
         });
 
@@ -128,7 +162,7 @@
           paint: {
             "line-color": "white",
             "line-width": 1,
-            "line-opacity": 0.6,
+            "line-opacity": 0.5,
           },
         });
 
@@ -190,6 +224,7 @@
     const polygon3Source = map.getSource("polygon3");
 
     if (lineSource && pointSource && polygonSource) {
+      map.setFilter("countries_fill", ["==", "ADMIN", conflictData]);
       lineSource.setData(newLines);
       pointSource.setData(newPoints);
       polygonSource.setData(newBlah);

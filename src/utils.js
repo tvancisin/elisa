@@ -12,6 +12,18 @@ export async function getCSV(paths) {
   return results;
 }
 
+export async function getGeo(url) {
+  let response = await fetch((import.meta.env.BASE_URL || "") + url);
+  let json = await response.json();
+  return json;
+}
+
+export async function getGeoMultiple(urls) {
+  const promises = urls.map(url => getGeo(url));
+  const results = await Promise.all(promises);
+  return results; // array of GeoJSON objects
+}
+
 export function construct_points(data) {
   return {
     type: "FeatureCollection",
@@ -85,19 +97,19 @@ export function createGeoJSONCircle(center, radiusInKm, points) {
   }
   ret.push(ret[0]);
 
-return {
-  type: "FeatureCollection",
-  features: [
-    {
-      type: "Feature",
-      geometry: {
-        type: "Polygon",
-        coordinates: [ret],
+  return {
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        geometry: {
+          type: "Polygon",
+          coordinates: [ret],
+        },
+        properties: {}, // optional, but good practice
       },
-      properties: {}, // optional, but good practice
-    },
-  ],
-};
+    ],
+  };
 }
 
 function arcPoints(a, b, r_frac, n) {
