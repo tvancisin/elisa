@@ -14,20 +14,23 @@
   let width = 400;
   let height = 400;
   let isOverlayVisible = true;
+  let enabled = false;
 
   // remove initial div
   function removeOverlay() {
     isOverlayVisible = false;
+    enabled = true;
   }
 
   $: x_scale = d3
     .scaleLinear()
-    .domain([0, 10000000])
-    .range([100, width - 20]);
+    .domain([0, 17000000])
+    .range([80, width - 20]);
+
   $: y_scale = d3
     .scaleLinear()
-    .domain([0, 100])
-    .range([height - 20, 20]);
+    .domain([0, 25000])
+    .range([height - 50, 10]);
 
   let blah = createGeoJSONCircle([67.709953, 33.93911], 1500);
   let krava = createGeoJSONCircle([67.709953, 33.93911], 5000);
@@ -242,7 +245,7 @@
 
   // code for arcs
   let arcs = [];
-  const startX = 50;
+  const startX = 75;
   $: if (geo) {
     const parsedData = geo
       .map((d) => {
@@ -267,8 +270,8 @@
 
     const xScale = d3
       .scaleLinear()
-      .domain([0, maxDistance])
-      .range([startX, width - 50]);
+      .domain([0, 17000000])
+      .range([80, width - 20]);
 
     const rScale = d3
       .scaleSqrt() // use square root for visual area scaling
@@ -294,6 +297,18 @@
         agreements: d.agreements,
       };
     });
+  }
+
+  let x_axis_grp;
+  let x_axis_grp1;
+  let y_axis_grp;
+  $: if (x_axis_grp && y_axis_grp) {
+    let xAxis = d3.axisBottom(x_scale);
+    d3.select(x_axis_grp).call(xAxis);
+    let xAxis1 = d3.axisBottom(x_scale);
+    d3.select(x_axis_grp1).call(xAxis1);
+    let yAxis = d3.axisLeft(y_scale);
+    d3.select(y_axis_grp).call(yAxis);
   }
 </script>
 
@@ -336,12 +351,24 @@
     </ol>
   </div>
   <div id="buttons">
-    <button on:click={() => updateMapData("Afghanistan")}> Afghanistan </button>
-    <button on:click={() => updateMapData("Israel")}>Israel</button>
-    <button on:click={() => updateMapData("Libya")}>Libya</button>
-    <button on:click={() => updateMapData("Sudan")}>Sudan</button>
-    <button on:click={() => updateMapData("Syria")}>Syria</button>
-    <button on:click={() => updateMapData("Yemen")}>Yemen</button>
+    <button disabled={!enabled} on:click={() => updateMapData("Afghanistan")}>
+      Afghanistan
+    </button>
+    <button disabled={!enabled} on:click={() => updateMapData("Israel")}
+      >Israel</button
+    >
+    <button disabled={!enabled} on:click={() => updateMapData("Libya")}
+      >Libya</button
+    >
+    <button disabled={!enabled} on:click={() => updateMapData("Sudan")}
+      >Sudan</button
+    >
+    <button disabled={!enabled} on:click={() => updateMapData("Syria")}
+      >Syria</button
+    >
+    <button disabled={!enabled} on:click={() => updateMapData("Yemen")}
+      >Yemen</button
+    >
   </div>
   <div class="map-wrapper">
     {#if isOverlayVisible}
@@ -371,49 +398,33 @@
   </div>
   <div id="chart1">
     <svg {width} {height}>
+      <g bind:this={x_axis_grp} transform={`translate(0, ${height - 40})`} />
+      <g bind:this={y_axis_grp} transform={`translate(75, 0)`} />
+      <text x={width / 2} y={height} fill="white" font-size="14px"
+        >Distance from Conflict</text
+      >
+      <text
+        x={20}
+        y={height / 2}
+        fill="white"
+        font-size="14px"
+        transform={`rotate(-90, 20, ${height / 2})`}
+      >
+        Number of Fatalities
+      </text>
       {#if cleaned_geo}
         {#each cleaned_geo as g}
           <circle
             cx={x_scale(g.distance)}
             cy={y_scale(g.deaths)}
             r="3"
-            fill="black"
-            stroke="white"
+            fill="steelblue"
+            fill-opacity="0.4"
+            stroke="none"
           >
           </circle>
         {/each}
       {/if}
-    </svg>
-  </div>
-  <div id="chart" bind:clientWidth={width} bind:clientHeight={height}>
-    <svg {width} {height}>
-      {#each arcs as arc}
-        <path
-          d={arc.d}
-          fill="none"
-          stroke="steelblue"
-          stroke-width="1"
-          stroke-opacity="0.3"
-        >
-          <title
-            >{arc.conflict_country}: {arc.distance.toLocaleString()} meters</title
-          >
-        </path>
-      {/each}
-      {#each arcs as arc}
-        <circle
-          cx={arc.x}
-          cy={arc.y}
-          r={arc.r}
-          fill="tomato"
-          fill-opacity="0.5"
-          stroke="black"
-        >
-          <title>
-            {arc.conflict_country} — Agreements: {arc.agreements}
-          </title>
-        </circle>
-      {/each}
     </svg>
   </div>
   <div class="blog_text">
@@ -452,13 +463,48 @@
       </li>
     </ul>
   </div>
+  <div id="chart" bind:clientWidth={width} bind:clientHeight={height}>
+    <svg {width} {height}>
+      <g bind:this={x_axis_grp1} transform={`translate(0, ${height - 40})`} />
+      <text x={width / 2} y={height} fill="white" font-size="14px"
+        >Distance from Conflict</text
+      >
+      {#each arcs as arc}
+        <path
+          d={arc.d}
+          fill="none"
+          stroke="steelblue"
+          stroke-width="1"
+          stroke-opacity="0.3"
+        >
+          <title
+            >{arc.conflict_country}: {arc.distance.toLocaleString()} meters</title
+          >
+        </path>
+      {/each}
+      {#each arcs as arc}
+        <circle
+          cx={arc.x}
+          cy={arc.y}
+          r={arc.r}
+          fill="tomato"
+          fill-opacity="0.5"
+          stroke="black"
+        >
+          <title>
+            {arc.conflict_country} — Agreements: {arc.agreements}
+          </title>
+        </circle>
+      {/each}
+    </svg>
+  </div>
 </main>
 
 <style>
   .map-wrapper {
     position: relative;
     width: 100%;
-    height: 100vh; /* or whatever height you need */
+    height: 80vh; /* or whatever height you need */
   }
 
   .overlay {
@@ -470,7 +516,7 @@
     width: 80%;
     height: 80vh;
     margin: 0px auto;
-    background-color: rgba(255, 255, 255, 0.2);
+    background-color: rgba(255, 255, 255, 0);
     display: flex;
     border-radius: 5px;
     align-items: center;
@@ -496,6 +542,28 @@
     cursor: pointer;
     background-color: red;
     color: white;
+  }
+
+  button {
+    background-color: #04aa6d; /* Green */
+    border: none;
+    color: black;
+    padding: 10px 30px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+
+  button:hover {
+    color: white;
+  }
+
+  button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
   }
 
   main {
