@@ -1,5 +1,7 @@
 <script>
   import * as d3 from "d3";
+  import RangeSlider from "svelte-range-slider-pips";
+
   import {
     getCSV,
     getGeoMultiple,
@@ -22,16 +24,6 @@
     enabled = true;
   }
 
-  $: x_scale = d3
-    .scaleLinear()
-    .domain([0, 17000000])
-    .range([80, width - 20]);
-
-  $: y_scale = d3
-    .scaleLinear()
-    .domain([0, 25000])
-    .range([height - 50, 10]);
-
   let blah = createGeoJSONCircle([67.709953, 33.93911], 1500);
   let krava = createGeoJSONCircle([67.709953, 33.93911], 5000);
 
@@ -41,16 +33,22 @@
 
   // load data
   let geo;
+  let scatter;
   let geo_data;
   let map;
-  let path = ["./elisa_map.csv"];
+  let path = ["./elisa_map.csv", "./final_month.csv"];
   let conflict_groups;
   let cleaned_geo = [];
   getCSV(path).then((data) => {
     geo = data[0];
-    cleaned_geo = geo
+    conflict_groups = d3.groups(geo, (d) => d.conflict_country);
+
+    scatter = data[1];
+    const idMap = new Map(); // key: `${distance}-${country}`, value: id
+    let currentId = 1;
+
+    cleaned_geo = scatter
       .map((d) => {
-        // Reject rows where any relevant field is "NA"
         if (
           d.dist_mediation_conflict === "NA" ||
           d.fatalities_best === "NA" ||
@@ -68,15 +66,30 @@
           return null;
         }
 
+        const year = d.YYYYMM.slice(0, 4);
+        const month = d.YYYYMM.slice(4, 6);
+        const formatted = `${month}-${year}`;
+
+        // Build a composite key
+        const key = `${d.conflict_country}-${distance}`;
+        let id;
+
+        if (idMap.has(key)) {
+          id = idMap.get(key);
+        } else {
+          id = currentId++;
+          idMap.set(key, id);
+        }
+
         return {
           ...d,
           distance,
+          date: formatted,
           deaths: isFinite(deaths) ? deaths : 0,
+          id, // assigned ID based on shared distance & country
         };
       })
       .filter(Boolean);
-
-    conflict_groups = d3.groups(geo, (d) => d.conflict_country);
   });
 
   const json_path = ["geojson.json"];
@@ -85,8 +98,6 @@
   });
 
   onMount(() => {
-    // Load GEOJSON
-
     map = new mapboxgl.Map({
       container: mapContainer,
       style: "mapbox://styles/sashagaribaldy/cm6ktkpxn00m901s2fo0bh1e4",
@@ -107,7 +118,7 @@
           generateId: true, // Ensures all features have unique IDs
         });
 
-        // Find the first symbol layer (typically a label layer)
+        // Labels layer beneath polygons
         const labelLayerId = map
           .getStyle()
           .layers.find(
@@ -299,6 +310,17 @@
     });
   }
 
+  $: x_scale = d3
+    .scaleLinear()
+    .domain([0, 17000000])
+    .range([80, width - 20]);
+
+  $: y_scale = d3
+    .scaleLinear()
+    .domain([0, 25000])
+    .range([height - 50, 10]);
+
+  // axes for scatterplot
   let x_axis_grp;
   let x_axis_grp1;
   let y_axis_grp;
@@ -310,12 +332,71 @@
     let yAxis = d3.axisLeft(y_scale);
     d3.select(y_axis_grp).call(yAxis);
   }
+
+  // let circle_data;
+  // $: centerX = width / 2;
+  // $: centerY = height / 2;
+
+  // $: if (cleaned_geo) {
+  //   cleaned_geo.sort((a, b) => +a.distance - +b.distance);
+  //   // Create a linear scale for distances to pixel lengths
+  //   const maxDistance = d3.max(cleaned_geo, (d) => +d.distance);
+  //   const lengthScale = d3
+  //     .scaleLinear()
+  //     .domain([0, maxDistance])
+  //     .range([0, 250]); // Max line length in pixels
+
+  //   // Compute line positions
+  //   circle_data = cleaned_geo.map((d, i) => {
+  //     const angle = (i / cleaned_geo.length) * 2 * Math.PI - Math.PI / 2;
+  //     const length = lengthScale(+d.distance);
+  //     const x2 = centerX + Math.cos(angle) * length;
+  //     const y2 = centerY + Math.sin(angle) * length;
+  //     return { ...d, x1: centerX, y1: centerY, x2, y2 };
+  //   });
+  // }
+
+  let timelines;
+  let allPoints;
+  $: if (cleaned_geo) {
+    // Filter out invalid YYYYMM (e.g. just a year like "2024")
+    const validData = cleaned_geo.filter((entry) =>
+      /^\d{6}$/.test(entry.YYYYMM),
+    );
+    // Sort valid entries chronologically
+    validData.sort((a, b) => Number(a.YYYYMM) - Number(b.YYYYMM));
+    cleaned_geo = validData;
+  }
+
+  let yyyymmList = [];
+
+  $: {
+    yyyymmList = [...new Set(cleaned_geo.map((d) => d.YYYYMM))]
+      .filter((ym) => ym.length === 6) // ignore invalid or year-only
+      .sort();
+  }
+  // Slider range is index-based (0 to yyyymmList.length - 1)
+  $: selectedRange = [0, yyyymmList.length - 1];
+
+  $: filtered_geo = cleaned_geo.filter((d) => {
+    const index = yyyymmList.indexOf(d.YYYYMM);
+    return index >= selectedRange[0] && index <= selectedRange[1];
+  });
+
+  const formatLabel = (index) => {
+    console.log("here");
+
+    const ym = yyyymmList[index];
+    if (!ym) return "";
+    return `${ym.slice(4, 6)}-${ym.slice(0, 4)}`; // MM-YYYY
+  };
 </script>
 
 <main>
   <h1>
     Bridging the Distance: New Insights on Geography in Conflict Mediation
   </h1>
+  <h2 style="font-size: 22px;">Elisa D'Amico</h2>
   <div class="blog_text">
     <p>
       Until recently, we haven’t been able to answer basic questions about the
@@ -396,8 +477,30 @@
       </li>
     </ol>
   </div>
-  <div id="chart1">
+  <div id="chart1" bind:clientWidth={width} bind:clientHeight={height}>
+    <RangeSlider
+      min={0}
+      max={yyyymmList.length - 1}
+      step={1}
+      values={selectedRange}
+      on:change={(e) => (selectedRange = e.detail.values)}
+      tooltips={true}
+      tooltipFormatter={(val) => formatLabel(val)}
+      pips={true}
+      pipFormatter={(val) => formatLabel(val)}
+    />
     <svg {width} {height}>
+      <!-- {#each timelines as timeline}
+        <path
+          d={`
+        M ${timeline.points.map((p) => `${xScale(p.x)},${yScale(p.y)}`).join(" L ")}
+      `}
+          stroke="steelblue"
+          fill="none"
+          stroke-width="1"
+        />
+      {/each} -->
+
       <g bind:this={x_axis_grp} transform={`translate(0, ${height - 40})`} />
       <g bind:this={y_axis_grp} transform={`translate(75, 0)`} />
       <text x={width / 2} y={height} fill="white" font-size="14px"
@@ -412,8 +515,8 @@
       >
         Number of Fatalities
       </text>
-      {#if cleaned_geo}
-        {#each cleaned_geo as g}
+      {#if filtered_geo}
+        {#each filtered_geo as g}
           <circle
             cx={x_scale(g.distance)}
             cy={y_scale(g.deaths)}
@@ -425,6 +528,19 @@
           </circle>
         {/each}
       {/if}
+
+      <!-- {#if circle_data}
+        {#each circle_data as d}
+          <line
+            x1={d.x1}
+            y1={d.y1}
+            x2={d.x2}
+            y2={d.y2}
+            stroke="steelblue"
+            stroke-width="0.5"
+          />
+        {/each}
+      {/if} -->
     </svg>
   </div>
   <div class="blog_text">
@@ -463,7 +579,8 @@
       </li>
     </ul>
   </div>
-  <div id="chart" bind:clientWidth={width} bind:clientHeight={height}>
+  <h2 style="font-size: 18px;">Visualization: Tomas Vancisin</h2>
+  <!-- <div id="chart">
     <svg {width} {height}>
       <g bind:this={x_axis_grp1} transform={`translate(0, ${height - 40})`} />
       <text x={width / 2} y={height} fill="white" font-size="14px"
@@ -497,7 +614,7 @@
         </circle>
       {/each}
     </svg>
-  </div>
+  </div> -->
 </main>
 
 <style>
@@ -548,7 +665,7 @@
     background-color: #04aa6d; /* Green */
     border: none;
     color: black;
-    padding: 10px 30px;
+    padding: 7px 20px;
     text-align: center;
     text-decoration: none;
     display: inline-block;
@@ -579,6 +696,13 @@
     width: 80%;
     margin: 50px auto;
     text-align: center;
+  }
+
+  h2 {
+    width: 80%;
+    margin: 5px auto;
+    text-align: center;
+    font-size: 20px;
   }
 
   li {
