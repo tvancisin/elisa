@@ -17,6 +17,7 @@
   let height = 400;
   let isOverlayVisible = true;
   let enabled = false;
+  let selectedCountry = "Afghanistan";
 
   // remove initial div
   function removeOverlay() {
@@ -38,7 +39,7 @@
   let map;
   let path = ["./elisa_map.csv", "./final_month.csv"];
   let conflict_groups;
-  let cleaned_geo = [];
+  let cleaned_geo;
   getCSV(path).then((data) => {
     geo = data[0];
     conflict_groups = d3.groups(geo, (d) => d.conflict_country);
@@ -90,6 +91,7 @@
         };
       })
       .filter(Boolean);
+    console.log(cleaned_geo);
   });
 
   const json_path = ["geojson.json"];
@@ -222,6 +224,8 @@
   });
 
   function updateMapData(conflictData) {
+    selectedCountry = conflictData;
+
     const entry = conflict_groups.find(([name]) => name === conflictData);
     let update_data = entry[1];
 
@@ -255,60 +259,60 @@
   }
 
   // code for arcs
-  let arcs = [];
-  const startX = 75;
-  $: if (geo) {
-    const parsedData = geo
-      .map((d) => {
-        const distance = +d.dist_mediation_conflict;
-        const agreements = +d.agreements_sum;
+  // let arcs = [];
+  // const startX = 75;
+  // $: if (geo) {
+  //   const parsedData = geo
+  //     .map((d) => {
+  //       const distance = +d.dist_mediation_conflict;
+  //       const agreements = +d.agreements_sum;
 
-        if (!isFinite(distance) || isNaN(distance) || distance <= 0) {
-          return null;
-        }
+  //       if (!isFinite(distance) || isNaN(distance) || distance <= 0) {
+  //         return null;
+  //       }
 
-        return {
-          ...d,
-          distance,
-          agreements:
-            isFinite(agreements) && !isNaN(agreements) ? agreements : 0,
-        };
-      })
-      .filter((d) => d !== null);
+  //       return {
+  //         ...d,
+  //         distance,
+  //         agreements:
+  //           isFinite(agreements) && !isNaN(agreements) ? agreements : 0,
+  //       };
+  //     })
+  //     .filter((d) => d !== null);
 
-    const maxDistance = d3.max(parsedData, (d) => d.distance);
-    const maxAgreements = d3.max(parsedData, (d) => d.agreements);
+  //   const maxDistance = d3.max(parsedData, (d) => d.distance);
+  //   const maxAgreements = d3.max(parsedData, (d) => d.agreements);
 
-    const xScale = d3
-      .scaleLinear()
-      .domain([0, 17000000])
-      .range([80, width - 20]);
+  //   const xScale = d3
+  //     .scaleLinear()
+  //     .domain([0, 17000000])
+  //     .range([80, width - 20]);
 
-    const rScale = d3
-      .scaleSqrt() // use square root for visual area scaling
-      .domain([0, maxAgreements])
-      .range([0, 20]); // adjust min/max radius as needed
+  //   const rScale = d3
+  //     .scaleSqrt() // use square root for visual area scaling
+  //     .domain([0, maxAgreements])
+  //     .range([0, 20]); // adjust min/max radius as needed
 
-    arcs = parsedData.map((d) => {
-      const xEnd = xScale(d.distance);
-      const radius = (xEnd - startX) / 2;
+  //   arcs = parsedData.map((d) => {
+  //     const xEnd = xScale(d.distance);
+  //     const radius = (xEnd - startX) / 2;
 
-      const arcPath = `
-        M ${startX},${height - 50}
-        A ${radius},${radius} 0 0,1 ${xEnd},${height - 50}
-      `;
+  //     const arcPath = `
+  //       M ${startX},${height - 50}
+  //       A ${radius},${radius} 0 0,1 ${xEnd},${height - 50}
+  //     `;
 
-      return {
-        d: arcPath,
-        x: xEnd,
-        y: height - 50,
-        r: rScale(d.agreements),
-        conflict_country: d.conflict_country,
-        distance: d.distance,
-        agreements: d.agreements,
-      };
-    });
-  }
+  //     return {
+  //       d: arcPath,
+  //       x: xEnd,
+  //       y: height - 50,
+  //       r: rScale(d.agreements),
+  //       conflict_country: d.conflict_country,
+  //       distance: d.distance,
+  //       agreements: d.agreements,
+  //     };
+  //   });
+  // }
 
   $: x_scale = d3
     .scaleLinear()
@@ -317,7 +321,7 @@
 
   $: y_scale = d3
     .scaleLinear()
-    .domain([0, 25000])
+    .domain([0, 12000])
     .range([height - 50, 10]);
 
   // axes for scatterplot
@@ -356,100 +360,132 @@
   //   });
   // }
 
-  let timelines;
-  let allPoints;
+  let groups;
+  const maxHeight = 400;
+  const widthPerPoint = 20;
+  let areaPaths = [];
   $: if (cleaned_geo) {
-    // Filter out invalid YYYYMM (e.g. just a year like "2024")
-    const validData = cleaned_geo.filter((entry) =>
-      /^\d{6}$/.test(entry.YYYYMM),
-    );
-    // Sort valid entries chronologically
-    validData.sort((a, b) => Number(a.YYYYMM) - Number(b.YYYYMM));
-    cleaned_geo = validData;
+    const grouped = d3.groups(cleaned_geo, (d) => d.id);
+
+    areaPaths = grouped
+      .map(([id, groupData]) => {
+        // Convert to scaled SVG coordinates
+        const points = groupData.map((g, i) => {
+          const x = i * widthPerPoint;
+          const y = maxHeight - +g.fatalities_best * 0.015;
+          return { x, y };
+        });
+
+        // Skip groups with too few points
+        if (points.length < 2) return null;
+
+        // Build area path string
+        let path = `M ${points[0].x},${maxHeight} `;
+        path += points.map((p) => `L ${p.x},${p.y}`).join(" ");
+        path += ` L ${points.at(-1).x},${maxHeight} Z`;
+
+        return { id, path };
+      })
+      .filter(Boolean); // Remove nulls
   }
-
-  let yyyymmList = [];
-
-  $: {
-    yyyymmList = [...new Set(cleaned_geo.map((d) => d.YYYYMM))]
-      .filter((ym) => ym.length === 6) // ignore invalid or year-only
-      .sort();
-  }
-  // Slider range is index-based (0 to yyyymmList.length - 1)
-  $: selectedRange = [0, yyyymmList.length - 1];
-
-  $: filtered_geo = cleaned_geo.filter((d) => {
-    const index = yyyymmList.indexOf(d.YYYYMM);
-    return index >= selectedRange[0] && index <= selectedRange[1];
-  });
-
-  const formatLabel = (index) => {
-    console.log("here");
-
-    const ym = yyyymmList[index];
-    if (!ym) return "";
-    return `${ym.slice(4, 6)}-${ym.slice(0, 4)}`; // MM-YYYY
-  };
 </script>
 
 <main>
   <h1>
-    Bridging the Distance: New Insights on Geography in Conflict Mediation
+    Bridging the Distance:<br /> New Insights on Geography in Conflict Mediation
   </h1>
-  <h2 style="font-size: 22px;">Elisa D'Amico</h2>
+  <h2 style="font-size: 22px;">
+    <a href="https://www.elisadamico.net/" target="_blank">Elisa D'Amico</a>
+  </h2>
   <div class="blog_text">
     <p>
       Until recently, we haven’t been able to answer basic questions about the
       logistics of conflict mediation and how they shape outcomes, largely due
       to a lack of systematic data. As a result, factors like where mediation
-      takes place have remained understudied. With new data now available,
-      researchers are beginning to examine these overlooked dimensions,
+      takes place have remained understudied. With <a
+        href="https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/PYRHS6"
+        target="_blank">new data</a
+      > now available, researchers are beginning to examine these overlooked dimensions,
       including recent work on the role of location in the mediation process.
     </p>
     <p>
-      A recent study, “The Geography of Conflict Mediation: Proximity and
-      Success in Armed Conflict Resolutions,” looks at how the distance between
-      conflict zones and mediation sites affects the chances of reaching a
-      peaceful outcome. Drawing on newly available geospatial data, the study
-      finds that location plays a meaningful role in shaping mediation success.
+      A recent study, <a
+        href="https://github.com/elisadamico/The-Geography-of-Conflict-Mediation/blob/main/DAmico_TheGeographyofConflictMediation.pdf"
+        target="_blank"
+        >“The Geography of Conflict Mediation: Proximity and Success in Armed
+        Conflict Resolutions,”</a
+      > looks at how the distance between conflict zones and mediation sites affects
+      the chances of reaching a peaceful outcome. Drawing on newly available geospatial
+      data, the study finds that location plays a meaningful role in shaping mediation
+      success.
     </p>
     <h2>The Paradox of Distance: Agreements vs. De-escalation</h2>
     <p>The research highlights a fascinating duality in mediation success:</p>
 
     <ol>
       <li>
-        Distant Mediation Fosters Agreements: The study finds that the further a
-        mediation event is from a conflict area, the higher the likelihood of a
-        formal peace agreement being signed. This suggests that a greater
-        geographical distance can confer perceived neutrality, reduce immediate
-        local political pressures, and allow parties to negotiate without the
-        intense emotional and security concerns that often plague discussions
-        held closer to the conflict. The data indicates that for every
-        additional “far away” mediation event, the odds of a peace agreement
-        being signed increase by approximately 14.2%. This underscores the
-        strategic value of neutral ground when aiming for formal settlements.
+        <strong>Distant Mediation Fosters Agreements</strong>: The study finds
+        that the further a mediation event is from a conflict area, the higher
+        the likelihood of a formal peace agreement being signed. This suggests
+        that a greater geographical distance can confer perceived neutrality,
+        reduce immediate local political pressures, and allow parties to
+        negotiate without the intense emotional and security concerns that often
+        plague discussions held closer to the conflict. The data indicates that
+        for every additional “far away” mediation event, the odds of a peace
+        agreement being signed increase by approximately 14.2%. This underscores
+        the strategic value of neutral ground when aiming for formal
+        settlements.
       </li>
     </ol>
   </div>
   <div id="buttons">
-    <button disabled={!enabled} on:click={() => updateMapData("Afghanistan")}>
+    <button
+      disabled={!enabled}
+      class:selected={selectedCountry === "Afghanistan"}
+      on:click={() => updateMapData("Afghanistan")}
+    >
       Afghanistan
     </button>
-    <button disabled={!enabled} on:click={() => updateMapData("Israel")}
-      >Israel</button
+
+    <button
+      disabled={!enabled}
+      class:selected={selectedCountry === "Israel"}
+      on:click={() => updateMapData("Israel")}
     >
-    <button disabled={!enabled} on:click={() => updateMapData("Libya")}
-      >Libya</button
+      Israel
+    </button>
+
+    <button
+      disabled={!enabled}
+      class:selected={selectedCountry === "Libya"}
+      on:click={() => updateMapData("Libya")}
     >
-    <button disabled={!enabled} on:click={() => updateMapData("Sudan")}
-      >Sudan</button
+      Libya
+    </button>
+
+    <button
+      disabled={!enabled}
+      class:selected={selectedCountry === "Sudan"}
+      on:click={() => updateMapData("Sudan")}
     >
-    <button disabled={!enabled} on:click={() => updateMapData("Syria")}
-      >Syria</button
+      Sudan
+    </button>
+
+    <button
+      disabled={!enabled}
+      class:selected={selectedCountry === "Syria"}
+      on:click={() => updateMapData("Syria")}
     >
-    <button disabled={!enabled} on:click={() => updateMapData("Yemen")}
-      >Yemen</button
+      Syria
+    </button>
+
+    <button
+      disabled={!enabled}
+      class:selected={selectedCountry === "Yemen"}
+      on:click={() => updateMapData("Yemen")}
     >
+      Yemen
+    </button>
   </div>
   <div class="map-wrapper">
     {#if isOverlayVisible}
@@ -465,20 +501,21 @@
   <div class="blog_text">
     <ol start="2">
       <li>
-        Closer Proximity Reduces Violence: Conversely, the research demonstrates
-        that closer proximity between a mediation event and the conflict zone is
-        directly linked to a greater reduction in violent events and fatalities.
-        This is because localized mediation can foster trust, directly engage
-        local actors, address specific grievances, and enable quicker responses
-        to escalating violence on the ground. Such immediacy, driven by close
-        proximity, acts as a powerful catalyst for de-escalation. Specifically,
-        for every additional “close by” mediation event, the expected number of
-        battle deaths in the following month decreases by approximately 4.7%.
+        <strong>Closer Proximity Reduces Violence</strong>: Conversely, the
+        research demonstrates that closer proximity between a mediation event
+        and the conflict zone is directly linked to a greater reduction in
+        violent events and fatalities. This is because localized mediation can
+        foster trust, directly engage local actors, address specific grievances,
+        and enable quicker responses to escalating violence on the ground. Such
+        immediacy, driven by close proximity, acts as a powerful catalyst for
+        de-escalation. Specifically, for every additional “close by” mediation
+        event, the expected number of battle deaths in the following month
+        decreases by approximately 4.7%.
       </li>
     </ol>
   </div>
   <div id="chart1" bind:clientWidth={width} bind:clientHeight={height}>
-    <RangeSlider
+    <!-- <RangeSlider
       min={0}
       max={yyyymmList.length - 1}
       step={1}
@@ -488,20 +525,20 @@
       tooltipFormatter={(val) => formatLabel(val)}
       pips={true}
       pipFormatter={(val) => formatLabel(val)}
-    />
-    <svg {width} {height}>
-      <!-- {#each timelines as timeline}
-        <path
-          d={`
-        M ${timeline.points.map((p) => `${xScale(p.x)},${yScale(p.y)}`).join(" L ")}
-      `}
-          stroke="steelblue"
-          fill="none"
-          stroke-width="1"
-        />
+    /> -->
+    <!-- <svg width="1000" height={areaPaths.length * (maxHeight + 10)}>
+      {#each areaPaths as { id, path }, i}
+        <g transform={`translate(0, ${i * (maxHeight + 10)})`}>
+          <path d={path} fill="white" opacity="0.2" stroke="white" />
+        </g>
       {/each} -->
 
-      <g bind:this={x_axis_grp} transform={`translate(0, ${height - 40})`} />
+    <svg {width} {height}>
+      {#each areaPaths as { id, path }, i}
+        <path d={path} fill="white" opacity="0.2" stroke="white" />
+      {/each}
+
+      <!-- <g bind:this={x_axis_grp} transform={`translate(0, ${height - 40})`} />
       <g bind:this={y_axis_grp} transform={`translate(75, 0)`} />
       <text x={width / 2} y={height} fill="white" font-size="14px"
         >Distance from Conflict</text
@@ -527,7 +564,7 @@
           >
           </circle>
         {/each}
-      {/if}
+      {/if} -->
 
       <!-- {#if circle_data}
         {#each circle_data as d}
@@ -559,23 +596,23 @@
     </p>
     <ul>
       <li>
-        Tailor the Approach to the Goal: If the primary objective is a formal
-        peace agreement, seeking geographically distant and neutral mediation
-        venues appears to be a more effective strategy.
+        <strong>Tailor the Approach to the Goal</strong>: If the primary
+        objective is a formal peace agreement, seeking geographically distant
+        and neutral mediation venues appears to be a more effective strategy.
       </li>
       <li>
-        Invest in Localized Efforts: For immediate de-escalation and mitigation
-        of fatalities, greater investment in and support for localized mediation
-        efforts are essential. These efforts leverage intimate knowledge of the
-        conflict context and facilitate trust-building among directly affected
-        parties.
+        <strong>Invest in Localized Efforts</strong>: For immediate
+        de-escalation and mitigation of fatalities, greater investment in and
+        support for localized mediation efforts are essential. These efforts
+        leverage intimate knowledge of the conflict context and facilitate
+        trust-building among directly affected parties.
       </li>
       <li>
-        A Holistic Strategy: True conflict resolution requires a holistic
-        strategy that values both formal peace agreements and on-the-ground
-        violence reduction. This may necessitate a multi-layered approach,
-        combining distant high-level negotiations with embedded, proximate
-        mediation initiatives.
+        <strong>A Holistic Strategy</strong>: True conflict resolution requires
+        a holistic strategy that values both formal peace agreements and
+        on-the-ground violence reduction. This may necessitate a multi-layered
+        approach, combining distant high-level negotiations with embedded,
+        proximate mediation initiatives.
       </li>
     </ul>
   </div>
@@ -679,8 +716,8 @@
   }
 
   button:disabled {
-    background-color: #ccc;
     cursor: not-allowed;
+    color: inherit; /* Prevents color change */
   }
 
   main {
@@ -733,5 +770,14 @@
     width: 80%;
     height: 80vh;
     margin: auto;
+  }
+
+  a {
+    color: steelblue;
+  }
+
+  .selected {
+    background-color: steelblue; /* or whatever color you prefer */
+    color: white;
   }
 </style>
