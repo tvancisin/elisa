@@ -1,6 +1,7 @@
 <script>
   import * as d3 from "d3";
   import RangeSlider from "svelte-range-slider-pips";
+  import CirclePoint from "./lib/CirclePoint.svelte";
 
   import {
     getCSV,
@@ -40,12 +41,13 @@
   let path = ["./elisa_map.csv", "./final_month.csv"];
   let conflict_groups;
   let cleaned_geo;
+  let sortedByDate = [];
   getCSV(path).then((data) => {
     geo = data[0];
     conflict_groups = d3.groups(geo, (d) => d.conflict_country);
 
     scatter = data[1];
-    const idMap = new Map(); // key: `${distance}-${country}`, value: id
+    const idMap = new Map();
     let currentId = 1;
 
     cleaned_geo = scatter
@@ -91,7 +93,17 @@
         };
       })
       .filter(Boolean);
-    console.log(cleaned_geo);
+
+    sortedByDate = cleaned_geo.sort((a, b) => {
+      // Convert "MM-YYYY" to "YYYY-MM" for proper comparison
+      const [aMonth, aYear] = a.date.split("-");
+      const [bMonth, bYear] = b.date.split("-");
+
+      const aDate = `${aYear}-${aMonth}`;
+      const bDate = `${bYear}-${bMonth}`;
+
+      return aDate.localeCompare(bDate);
+    });
   });
 
   const json_path = ["geojson.json"];
@@ -337,56 +349,62 @@
     d3.select(y_axis_grp).call(yAxis);
   }
 
-  // let circle_data;
-  // $: centerX = width / 2;
-  // $: centerY = height / 2;
+  // let filtered_geo = [];
+  // // Extract all unique sorted dates (using YYYYMM for sorting)
+  // let dates = [];
+  // let selectedDateIndex = 0;
 
-  // $: if (cleaned_geo) {
-  //   cleaned_geo.sort((a, b) => +a.distance - +b.distance);
-  //   // Create a linear scale for distances to pixel lengths
-  //   const maxDistance = d3.max(cleaned_geo, (d) => +d.distance);
-  //   const lengthScale = d3
-  //     .scaleLinear()
-  //     .domain([0, maxDistance])
-  //     .range([0, 250]); // Max line length in pixels
-
-  //   // Compute line positions
-  //   circle_data = cleaned_geo.map((d, i) => {
-  //     const angle = (i / cleaned_geo.length) * 2 * Math.PI - Math.PI / 2;
-  //     const length = lengthScale(+d.distance);
-  //     const x2 = centerX + Math.cos(angle) * length;
-  //     const y2 = centerY + Math.sin(angle) * length;
-  //     return { ...d, x1: centerX, y1: centerY, x2, y2 };
-  //   });
+  // $: if (sortedByDate) {
+  //   const dateSet = new Set(
+  //     sortedByDate.map((d) => d.YYYYMM).filter((ym) => ym && ym.length > 4), // remove undefined/null and short YYYYMM
+  //   );
+  //   dates = Array.from(dateSet).sort(); // sorted array of unique dates
+  //   selectedDateIndex = dates.length - 1; // default to latest
+  //   updateFilteredGeo();
   // }
 
-  let groups;
-  const maxHeight = 400;
-  const widthPerPoint = 20;
-  let areaPaths = [];
-  $: if (cleaned_geo) {
-    const grouped = d3.groups(cleaned_geo, (d) => d.id);
+  // function updateFilteredGeo() {
+  //   const selectedDate = dates[selectedDateIndex];
+  //   filtered_geo = sortedByDate.filter((d) => d.YYYYMM === selectedDate);
+  //   console.log(filtered_geo);
+  // }
 
-    areaPaths = grouped
-      .map(([id, groupData]) => {
-        // Convert to scaled SVG coordinates
-        const points = groupData.map((g, i) => {
-          const x = i * widthPerPoint;
-          const y = maxHeight - +g.fatalities_best * 0.015;
-          return { x, y };
-        });
+  // Data state
+  let dates = [];
+  let selectedDateIndex = 0;
+  let filtered_geo = [];
 
-        // Skip groups with too few points
-        if (points.length < 2) return null;
+  // Extract and sort dates when sortedByDate is ready
+  $: if (sortedByDate) {
+    const dateSet = new Set(
+      sortedByDate.map((d) => d.YYYYMM).filter((ym) => ym && ym.length > 4),
+    );
+    dates = Array.from(dateSet).sort();
+    selectedDateIndex = dates.length - 1;
+    updateFilteredGeo();
+  }
 
-        // Build area path string
-        let path = `M ${points[0].x},${maxHeight} `;
-        path += points.map((p) => `L ${p.x},${p.y}`).join(" ");
-        path += ` L ${points.at(-1).x},${maxHeight} Z`;
+  function updateFilteredGeo() {
+    const selectedDate = dates[selectedDateIndex];
+    filtered_geo = sortedByDate.filter((d) => d.YYYYMM === selectedDate);
+    console.log("Filtered data:", filtered_geo);
+  }
 
-        return { id, path };
-      })
-      .filter(Boolean); // Remove nulls
+  function formatDate(yyyymm) {
+    console.log("here");
+
+    const year = yyyymm.slice(0, 4);
+    const month = yyyymm.slice(4);
+
+    console.log(year, month);
+
+    return `${month}-${year}`;
+  }
+
+  let pipLabels = [];
+  $: if (dates.length > 0) {
+    pipLabels = dates.map(formatDate);
+    console.log(pipLabels);
   }
 </script>
 
@@ -424,16 +442,16 @@
 
     <ol>
       <li>
-        <strong>Distant Mediation Fosters Agreements</strong>: The study finds blaaaaaaaa
-        that the further a mediation event is from a conflict area, the higher
-        the likelihood of a formal peace agreement being signed. This suggests
-        that a greater geographical distance can confer perceived neutrality,
-        reduce immediate local political pressures, and allow parties to
-        negotiate without the intense emotional and security concerns that often
-        plague discussions held closer to the conflict. The data indicates that
-        for every additional “far away” mediation event, the odds of a peace
-        agreement being signed increase by approximately 14.2%. This underscores
-        the strategic value of neutral ground when aiming for formal
+        <strong>Distant Mediation Fosters Agreements</strong>: The study finds
+        blaaaaaaaa that the further a mediation event is from a conflict area,
+        the higher the likelihood of a formal peace agreement being signed. This
+        suggests that a greater geographical distance can confer perceived
+        neutrality, reduce immediate local political pressures, and allow
+        parties to negotiate without the intense emotional and security concerns
+        that often plague discussions held closer to the conflict. The data
+        indicates that for every additional “far away” mediation event, the odds
+        of a peace agreement being signed increase by approximately 14.2%. This
+        underscores the strategic value of neutral ground when aiming for formal
         settlements.
       </li>
     </ol>
@@ -514,31 +532,38 @@
       </li>
     </ol>
   </div>
+  <!-- <input
+    type="range"
+    min="0"
+    max={dates.length - 1}
+    bind:value={selectedDateIndex}
+    on:input={updateFilteredGeo}
+  />
+  <p style="color:white;">Date: {dates[selectedDateIndex]}</p> -->
+  <div id="slider">
+    {#if dates.length > 0 && pipLabels.length > 0}
+      <RangeSlider
+        min={0}
+        max={dates.length - 1}
+        step={1}
+        values={[selectedDateIndex]}
+        on:change={(e,i) => {
+          console.log(e);
+          
+          selectedDateIndex = e.detail.values[0];
+          updateFilteredGeo();
+        }}
+        pips
+      />
+      <p style="color: white; padding-left: 10px">
+        Selected Month: {pipLabels[selectedDateIndex]}
+      </p>
+    {/if}
+  </div>
+
   <div id="chart1" bind:clientWidth={width} bind:clientHeight={height}>
-    <!-- <RangeSlider
-      min={0}
-      max={yyyymmList.length - 1}
-      step={1}
-      values={selectedRange}
-      on:change={(e) => (selectedRange = e.detail.values)}
-      tooltips={true}
-      tooltipFormatter={(val) => formatLabel(val)}
-      pips={true}
-      pipFormatter={(val) => formatLabel(val)}
-    /> -->
-    <!-- <svg width="1000" height={areaPaths.length * (maxHeight + 10)}>
-      {#each areaPaths as { id, path }, i}
-        <g transform={`translate(0, ${i * (maxHeight + 10)})`}>
-          <path d={path} fill="white" opacity="0.2" stroke="white" />
-        </g>
-      {/each} -->
-
     <svg {width} {height}>
-      {#each areaPaths as { id, path }, i}
-        <path d={path} fill="white" opacity="0.2" stroke="white" />
-      {/each}
-
-      <!-- <g bind:this={x_axis_grp} transform={`translate(0, ${height - 40})`} />
+      <g bind:this={x_axis_grp} transform={`translate(0, ${height - 40})`} />
       <g bind:this={y_axis_grp} transform={`translate(75, 0)`} />
       <text x={width / 2} y={height} fill="white" font-size="14px"
         >Distance from Conflict</text
@@ -552,32 +577,12 @@
       >
         Number of Fatalities
       </text>
+
       {#if filtered_geo}
         {#each filtered_geo as g}
-          <circle
-            cx={x_scale(g.distance)}
-            cy={y_scale(g.deaths)}
-            r="3"
-            fill="steelblue"
-            fill-opacity="0.4"
-            stroke="none"
-          >
-          </circle>
+          <CirclePoint x={x_scale(g.distance)} y={y_scale(g.deaths)} r={5} />
         {/each}
-      {/if} -->
-
-      <!-- {#if circle_data}
-        {#each circle_data as d}
-          <line
-            x1={d.x1}
-            y1={d.y1}
-            x2={d.x2}
-            y2={d.y2}
-            stroke="steelblue"
-            stroke-width="0.5"
-          />
-        {/each}
-      {/if} -->
+      {/if}
     </svg>
   </div>
   <div class="blog_text">
@@ -765,10 +770,14 @@
   }
 
   #map,
-  #chart,
   #chart1 {
     width: 80%;
     height: 80vh;
+    margin: auto;
+  }
+
+  #slider {
+    width: 80%;
     margin: auto;
   }
 
