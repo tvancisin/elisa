@@ -118,6 +118,7 @@
       projection: "naturalEarth",
       center: [10, 10],
       zoom: 1.2,
+      logoPosition: "top-right",
     });
 
     map.on("load", () => {
@@ -515,6 +516,84 @@
     {/if}
     <div id="map" bind:this={mapContainer}></div>
   </div>
+  <div id="legend">
+    <svg width="200px" height="70px">
+      <text x="0" y="10" fill="white" font-size="10"
+        >Number of Peace Agreements</text
+      >
+      <circle
+        cx="20"
+        cy="50"
+        r="5"
+        fill="#FF5722"
+        fill-opacity="0.2"
+        stroke="white"
+      ></circle>
+      <line
+        x1="20"
+        y1="45"
+        x2="70"
+        y2="45"
+        stroke="white"
+        stroke-dasharray="4,2"
+      ></line>
+      <text
+        x="75"
+        y="45"
+        fill="white"
+        font-size="10"
+        alignment-baseline="middle">5</text
+      >
+
+      <circle
+        cx="20"
+        cy="45"
+        r="10"
+        fill="#FF5722"
+        fill-opacity="0.2"
+        stroke="white"
+      ></circle>
+      <line
+        x1="20"
+        y1="35"
+        x2="70"
+        y2="35"
+        stroke="white"
+        stroke-dasharray="4,2"
+      ></line>
+      <text
+        x="75"
+        y="35"
+        fill="white"
+        font-size="10"
+        alignment-baseline="middle">10</text
+      >
+
+      <circle
+        cx="20"
+        cy="40"
+        r="15"
+        fill="#FF5722"
+        fill-opacity="0.2"
+        stroke="white"
+      ></circle>
+      <line
+        x1="20"
+        y1="25"
+        x2="70"
+        y2="25"
+        stroke="white"
+        stroke-dasharray="4,2"
+      ></line>
+      <text
+        x="75"
+        y="25"
+        fill="white"
+        font-size="10"
+        alignment-baseline="middle">20</text
+      >
+    </svg>
+  </div>
 
   <div class="blog_text">
     <ol start="2">
@@ -547,9 +626,7 @@
         max={dates.length - 1}
         step={1}
         values={[selectedDateIndex]}
-        on:change={(e,i) => {
-          console.log(e);
-          
+        on:change={(e, i) => {
           selectedDateIndex = e.detail.values[0];
           updateFilteredGeo();
         }}
@@ -620,8 +697,44 @@
         proximate mediation initiatives.
       </li>
     </ul>
+    <p>
+      In an era of persistent and complex conflicts, understanding the
+      geographical dynamics of mediation is no longer a peripheral concern—it is
+      central to building effective and sustainable peace. By strategically
+      considering where we mediate, we can significantly enhance our collective
+      ability to resolve conflicts and mitigate human suffering.
+    </p>
+    <h2>Sources</h2>
+    <ul>
+      <li>
+        data on mediation events comes from the Mediation Event and Negotiators
+        Database (MEND) V1:  Peter, Mateja; Badanjak, Sanja; D'Amico, Elisa;
+        Houghton, Kasia, 2025, "Mediation Event and Negotiators Database
+        (MEND)", <a
+          href="https://dataverse.harvard.edu/citation?persistentId=doi:10.7910/DVN/PYRHS6"
+          >doi.org/10.7910/DVN/PYRHS6</a
+        >, Harvard Dataverse, V1
+      </li>
+      <li>
+        data on peace agreements comes from the PA-X Database Version 9:  Bell,
+        C., & Badanjak, S. (2019). Introducing PA-X: A new peace agreement
+        database and dataset. Journal of Peace Research, 56(3), 452-466.
+        Available at <a href="https://pax.peaceagreements.org/"
+          >pax.peaceagreements.org</a
+        >
+      </li>
+      <li>
+        data on fatalities comes from the: UCDP Georeferenced Event Dataset
+        (GED) Global version 24.1  Davies, Shawn, Garoun Engström, Therese
+        Pettersson & Magnus Öberg (2024). Organized violence 1989-2023, and the
+        prevalence of organized crime groups. Journal of Peace Research 61(4).
+      </li>
+    </ul>
   </div>
-  <h2 style="font-size: 18px;">Visualization: Tomas Vancisin</h2>
+
+  <h2 style="font-size: 16px;">
+    Web & Visualization: <a href="https://tomasvancisin.co.uk/">Tomas Vancisin</a>
+  </h2>
   <!-- <div id="chart">
     <svg {width} {height}>
       <g bind:this={x_axis_grp1} transform={`translate(0, ${height - 40})`} />
@@ -704,25 +817,24 @@
   }
 
   button {
-    background-color: #04aa6d; /* Green */
-    border: none;
-    color: black;
-    padding: 7px 20px;
+    background-color: #001c23;
+    border: solid 1px rgb(99, 99, 99);
+    color: white;
+    padding: 4px 20px;
     text-align: center;
     text-decoration: none;
     display: inline-block;
     font-size: 16px;
-    border-radius: 3px;
+    border-radius: 4px;
     cursor: pointer;
   }
 
   button:hover {
-    color: white;
+    background-color: steelblue;
   }
 
   button:disabled {
     cursor: not-allowed;
-    color: inherit; /* Prevents color change */
   }
 
   main {
@@ -769,6 +881,11 @@
     margin: 10px auto;
   }
 
+  #legend {
+    width: 80%;
+    margin: auto;
+  }
+
   #map,
   #chart1 {
     width: 80%;
@@ -786,7 +903,7 @@
   }
 
   .selected {
-    background-color: steelblue; /* or whatever color you prefer */
+    background-color: steelblue;
     color: white;
   }
 </style>
