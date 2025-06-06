@@ -453,7 +453,7 @@
         indicates that for every additional “far away” mediation event, the odds
         of a peace agreement being signed increase by approximately 14.2%. This
         underscores the strategic value of neutral ground when aiming for formal
-        settlements.
+        settlements. Tomas here.
       </li>
     </ol>
   </div>
