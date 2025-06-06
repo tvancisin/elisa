@@ -445,7 +445,7 @@
       <li>
         <strong>Distant Mediation Fosters Agreements</strong>: The study finds
         that the further a mediation event is from a conflict area,
-        the higher the likelihood of a formal peace agreement being signed. This
+        the higher the likyelihood of a formal peace agreement being signed. This
         suggests that a greater geographical distance can confer perceived
         neutrality, reduce immediate local political pressures, and allow
         parties to negotiate without the intense emotional and security concerns
