@@ -443,7 +443,7 @@
 
     <ol>
       <li>
-        <strong>Distant Mediation Fosters Agreements</strong>: The study finds
+        <strong>Distant Mediation Fosters Agreements</strong>: Elisa Was Here. The study finds
         blaaaaaaaa that the further a mediation event is from a conflict area,
         the higher the likelihood of a formal peace agreement being signed. This
         suggests that a greater geographical distance can confer perceived
