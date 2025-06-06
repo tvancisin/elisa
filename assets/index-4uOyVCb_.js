@@ -2672,8 +2672,8 @@ ${c.vertexSource}`,this.forceManualRenderingForInstanceIDShaders&&(z=z.replaceAl
         Conflict Resolutions,”</a> looks at how the distance between conflict zones and mediation sites affects
       the chances of reaching a peaceful outcome. Drawing on newly available geospatial
       data, the study finds that location plays a meaningful role in shaping mediation
-      success.</p> <h2 class="svelte-1qhwf62">The Paradox of Distance: Agreements vs. De-escalation</h2> <p>The research highlights a fascinating duality in mediation success:</p> <ol><li class="svelte-1qhwf62"><strong>Distant Mediation Fosters Agreements</strong>: Elisa Was Here. The study finds
-        blaaaaaaaa that the further a mediation event is from a conflict area,
+      success.</p> <h2 class="svelte-1qhwf62">The Paradox of Distance: Agreements vs. De-escalation</h2> <p>The research highlights a fascinating duality in mediation success:</p> <ol><li class="svelte-1qhwf62"><strong>Distant Mediation Fosters Agreements</strong>: The study finds
+        that the further a mediation event is from a conflict area,
         the higher the likelihood of a formal peace agreement being signed. This
         suggests that a greater geographical distance can confer perceived
         neutrality, reduce immediate local political pressures, and allow
