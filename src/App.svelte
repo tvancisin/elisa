@@ -443,8 +443,8 @@
 
     <ol>
       <li>
-        <strong>Distant Mediation Fosters Agreements</strong>: Elisa Was Here. The study finds
-        blaaaaaaaa that the further a mediation event is from a conflict area,
+        <strong>Distant Mediation Fosters Agreements</strong>: The study finds
+        that the further a mediation event is from a conflict area,
         the higher the likelihood of a formal peace agreement being signed. This
         suggests that a greater geographical distance can confer perceived
         neutrality, reduce immediate local political pressures, and allow
@@ -453,7 +453,7 @@
         indicates that for every additional “far away” mediation event, the odds
         of a peace agreement being signed increase by approximately 14.2%. This
         underscores the strategic value of neutral ground when aiming for formal
-        settlements.
+        settlements. Hello I'm writing. 
       </li>
     </ol>
   </div>
